@@ -1,34 +1,41 @@
 package br.com.pixelracer;
 
-import com.badlogic.gdx.ApplicationAdapter;
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.Game;
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.utils.ScreenUtils;
+import com.badlogic.gdx.utils.viewport.FitViewport;
+import br.com.pixelracer.assets.Assets;
+import br.com.pixelracer.config.Config;
+import br.com.pixelracer.screen.MenuScreen;
 
-/** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
-public class PixelRacerGame extends ApplicationAdapter {
-    private SpriteBatch batch;
-    private Texture image;
+public class PixelRacerGame extends Game {
+    public SpriteBatch batch;
+    public OrthographicCamera camera;
+    public FitViewport viewport;
+    public Assets assets;
 
     @Override
     public void create() {
         batch = new SpriteBatch();
-        image = new Texture("libgdx.png");
+        camera = new OrthographicCamera();
+        viewport = new FitViewport(Config.WORLD_W, Config.WORLD_H, camera);
+        viewport.apply(true);
+
+        assets = new Assets();
+        assets.load();
+
+        setScreen(new MenuScreen(this));
     }
 
     @Override
-    public void render() {
-        ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
-        batch.begin();
-        batch.draw(image, 140, 210);
-        batch.end();
+    public void resize(int width, int height) {
+        viewport.update(width, height, true);
     }
 
     @Override
     public void dispose() {
+        if (getScreen() != null) getScreen().dispose();
         batch.dispose();
-        image.dispose();
+        assets.dispose();
     }
 }

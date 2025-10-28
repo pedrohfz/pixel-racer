@@ -1,4 +1,13 @@
 package br.com.pixelracer.config;
 
-public class Config {
+public final class Config {
+    private Config(){}
+
+    public static final float WORLD_W = 420f;
+    public static final float WORLD_H = 680f;
+
+    public static final float BG_R = 0.08f;
+    public static final float BG_G = 0.08f;
+    public static final float BG_B = 0.10f;
+    public static final float BG_A = 1f;
 }
