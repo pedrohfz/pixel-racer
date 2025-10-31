@@ -1,16 +1,20 @@
 package br.com.pixelracer.assets;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator.FreeTypeFontParameter;
 
+
 public class Assets {
     public BitmapFont fontSmall;
     public BitmapFont fontBig;
+    public Sound buttonSound;
 
+    
     public void load() {
         FreeTypeFontGenerator gen = new FreeTypeFontGenerator(Gdx.files.internal("assets/fonts/PressStart2P.ttf"));
 
@@ -29,6 +33,15 @@ public class Assets {
         fontSmall = gen.generateFont(ps);
         fontBig   = gen.generateFont(pb);
         gen.dispose();
+
+        if (Gdx.files.internal("sfx/button.mp3").exists()) {
+            buttonSound = Gdx.audio.newSound(Gdx.files.internal("sfx/button.mp3"));
+        }
+
+    }
+
+    public void playButtonSound() {
+        if (buttonSound != null) buttonSound.play(0.5f); // 50% de volume
     }
 
     public void dispose() {

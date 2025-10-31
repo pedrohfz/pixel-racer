@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.GL20;
+
 import br.com.pixelracer.PixelRacerGame;
 import br.com.pixelracer.config.Config;
 
@@ -26,5 +27,15 @@ public class MenuScreen extends ScreenAdapter {
 
         if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) game.setScreen(new PlayScreen(game));
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) Gdx.app.exit();
+
+        if(com.badlogic.gdx.Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.ENTER)) {
+            game.assets.playButtonSound();
+            game.setScreen(new PlayScreen(game));
+        }
+
+        if(com.badlogic.gdx.Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.ESCAPE)) {
+            game.assets.playButtonSound();
+            com.badlogic.gdx.Gdx.app.exit();
+        }
     }
 }
