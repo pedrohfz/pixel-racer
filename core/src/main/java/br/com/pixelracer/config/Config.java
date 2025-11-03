@@ -10,4 +10,10 @@ public final class Config {
     public static final float BG_G = 0.08f;
     public static final float BG_B = 0.10f;
     public static final float BG_A = 1f;
+
+    public static final float ROAD_TILE_H = 340f;
+
+    public static final float SCROLL_GAIN = 1.2f;
+    public static final float SCROLL_MIN  = 40f;
+
 }

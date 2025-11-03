@@ -4,37 +4,85 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Texture;
 import br.com.pixelracer.PixelRacerGame;
 import br.com.pixelracer.config.Config;
+import br.com.pixelracer.entity.Player;
 
 public class PlayScreen extends ScreenAdapter {
     private final PixelRacerGame game;
-    private float elapsed = 0f;
+    private Player player;
 
-    public PlayScreen(PixelRacerGame game) { this.game = game; }
+    private Texture roadTile;
+    private float scrollY = 0f;
+    private float tileH;
+
+    private float timeElapsed;
+
+    public PlayScreen(PixelRacerGame game) {
+        this.game = game;
+        this.player = new Player();
+
+        if (Gdx.files.internal("gfx/road_tile.png").exists()) {
+            roadTile = new Texture(Gdx.files.internal("gfx/road_tile.png"));
+            roadTile.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
+
+            float srcW = roadTile.getWidth();
+            float srcH = roadTile.getHeight();
+            float scale = Config.WORLD_W / srcW;
+            tileH = srcH * scale;
+        } else if (Gdx.files.internal("assets/gfx/road.png").exists()) {
+            roadTile = new Texture(Gdx.files.internal("assets/gfx/road.png"));
+            roadTile.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
+            tileH = Config.WORLD_H;
+        }
+    }
 
     @Override
     public void render(float delta) {
-        elapsed += delta;
+        float dt = Math.min(delta, 1f / 30f);
 
-        Gdx.gl.glClearColor(0.09f, 0.11f, 0.13f, 1f);
+        // update do player
+        player.update(dt);
+
+        float pxPerSecond = Math.max(Config.SCROLL_MIN, player.getSpeed() * Config.SCROLL_GAIN);
+        scrollY += pxPerSecond * dt;
+
+        Gdx.gl.glClearColor(Config.BG_R, Config.BG_G, Config.BG_B, Config.BG_A);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         game.batch.setProjectionMatrix(game.camera.combined);
         game.batch.begin();
-        game.assets.fontSmall.draw(game.batch, "PLAY", 10, Config.WORLD_H - 10);
-        game.assets.fontSmall.draw(game.batch, "TEMPO: " + String.format("%.1fs", elapsed), 10, Config.WORLD_H - 30);
-        game.assets.fontSmall.draw(game.batch, "[M] MENU | [K] GAME OVER", 10, 30);
+
+        if (roadTile != null) {
+            float yStart = - (scrollY % tileH);
+
+            game.batch.draw(roadTile, 0, yStart, Config.WORLD_W, tileH);
+            game.batch.draw(roadTile, 0, yStart + tileH, Config.WORLD_W, tileH);
+            game.batch.draw(roadTile, 0, yStart + tileH * 2f, Config.WORLD_W, tileH);
+        }
+
+        player.render(game.batch);
+
+        game.assets.fontSmall.draw(game.batch, String.format("Speed: %.0f", player.getSpeed()), 20, Config.WORLD_H - 20);
+        game.assets.fontSmall.draw(game.batch, String.format("Time: %.1f", timeElapsed += dt), 20, Config.WORLD_H - 40);
+        game.assets.fontSmall.draw(game.batch, "M: MENU | K: GAME OVER", 20, 30);
+
         game.batch.end();
 
         if (Gdx.input.isKeyJustPressed(Input.Keys.M)) {
             game.assets.playButtonSound();
             game.setScreen(new MenuScreen(game));
         }
-
         if (Gdx.input.isKeyJustPressed(Input.Keys.K)) {
             game.assets.playButtonSound();
-            game.setScreen(new GameOverScreen(game, Math.round(elapsed)));
+            game.setScreen(new GameOverScreen(game, Math.round(timeElapsed)));
         }
+    }
+
+    @Override
+    public void dispose() {
+        player.dispose();
+        if (roadTile != null) roadTile.dispose();
     }
 }
