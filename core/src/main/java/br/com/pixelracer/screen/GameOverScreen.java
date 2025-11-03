@@ -24,11 +24,18 @@ public class GameOverScreen extends ScreenAdapter {
         game.batch.setProjectionMatrix(game.camera.combined);
         game.batch.begin();
         game.assets.fontBig.draw(game.batch, "GAME OVER", 80, Config.WORLD_H - 80);
-        game.assets.fontSmall.draw(game.batch, "Score: " + score, 80, Config.WORLD_H - 130);
-        game.assets.fontSmall.draw(game.batch, "[R] jogar de novo | [M] menu", 60, 60);
+        game.assets.fontSmall.draw(game.batch, "SCORE: " + score, 80, Config.WORLD_H - 130);
+        game.assets.fontSmall.draw(game.batch, "[R] JOGAR NOVAMENTE | [M] MENU", 60, 60);
         game.batch.end();
 
-        if (Gdx.input.isKeyJustPressed(Input.Keys.R)) game.setScreen(new PlayScreen(game));
-        if (Gdx.input.isKeyJustPressed(Input.Keys.M)) game.setScreen(new MenuScreen(game));
+        if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
+            game.assets.playButtonSound();
+            game.setScreen(new PlayScreen(game));
+        }
+
+        if (Gdx.input.isKeyJustPressed(Input.Keys.M)) {
+            game.assets.playButtonSound();
+            game.setScreen(new MenuScreen(game));
+        }
     }
 }

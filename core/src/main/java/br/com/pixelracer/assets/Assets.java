@@ -8,44 +8,54 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator.FreeTypeFontParameter;
 
-
 public class Assets {
     public BitmapFont fontSmall;
     public BitmapFont fontBig;
     public Sound buttonSound;
+    public Texture menuBg;
 
-    
     public void load() {
-        FreeTypeFontGenerator gen = new FreeTypeFontGenerator(Gdx.files.internal("assets/fonts/PressStart2P.ttf"));
+        if (Gdx.files.internal("assets/fonts/PressStart2P.ttf").exists()) {
+            FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("assets/fonts/PressStart2P.ttf"));
 
-        FreeTypeFontParameter ps = new FreeTypeFontParameter();
-        ps.size = 16;
-        ps.color = Color.WHITE;
-        ps.minFilter = Texture.TextureFilter.Nearest;
-        ps.magFilter = Texture.TextureFilter.Nearest;
+            FreeTypeFontParameter smallParam = new FreeTypeFontParameter();
+            smallParam.size = 16;
+            smallParam.color = Color.WHITE;
+            smallParam.borderWidth = 2;
+            smallParam.borderColor = Color.BLACK;
+            smallParam.minFilter = Texture.TextureFilter.Nearest;
+            smallParam.magFilter = Texture.TextureFilter.Nearest;
 
-        FreeTypeFontParameter pb = new FreeTypeFontParameter();
-        pb.size = 24;
-        pb.color = Color.WHITE;
-        pb.minFilter = Texture.TextureFilter.Nearest;
-        pb.magFilter = Texture.TextureFilter.Nearest;
+            FreeTypeFontParameter bigParam = new FreeTypeFontParameter();
+            bigParam.size = 24;
+            bigParam.color = Color.WHITE;
+            bigParam.borderWidth = 3;
+            bigParam.borderColor = Color.BLACK;
+            bigParam.minFilter = Texture.TextureFilter.Nearest;
+            bigParam.magFilter = Texture.TextureFilter.Nearest;
 
-        fontSmall = gen.generateFont(ps);
-        fontBig   = gen.generateFont(pb);
-        gen.dispose();
+            fontSmall = generator.generateFont(smallParam);
+            fontBig   = generator.generateFont(bigParam);
+            generator.dispose();
+        }
 
-        if (Gdx.files.internal("sfx/button.mp3").exists()) {
+        if (Gdx.files.internal("assets/sfx/button.mp3").exists()) {
             buttonSound = Gdx.audio.newSound(Gdx.files.internal("sfx/button.mp3"));
         }
 
+        if (Gdx.files.internal("assets/gfx/menu.png").exists()) {
+            menuBg = new Texture(Gdx.files.internal("gfx/menu.png"));
+        }
     }
 
     public void playButtonSound() {
-        if (buttonSound != null) buttonSound.play(0.5f); // 50% de volume
+        if (buttonSound != null) buttonSound.play(0.3f);
     }
 
     public void dispose() {
         if (fontSmall != null) fontSmall.dispose();
         if (fontBig   != null) fontBig.dispose();
+        if (buttonSound != null) buttonSound.dispose();
+        if (menuBg != null) menuBg.dispose();
     }
 }

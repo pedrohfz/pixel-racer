@@ -23,11 +23,18 @@ public class PlayScreen extends ScreenAdapter {
         game.batch.setProjectionMatrix(game.camera.combined);
         game.batch.begin();
         game.assets.fontSmall.draw(game.batch, "PLAY", 10, Config.WORLD_H - 10);
-        game.assets.fontSmall.draw(game.batch, "Tempo: " + String.format("%.1fs", elapsed), 10, Config.WORLD_H - 30);
-        game.assets.fontSmall.draw(game.batch, "[M] menu | [K] game over", 10, 30);
+        game.assets.fontSmall.draw(game.batch, "TEMPO: " + String.format("%.1fs", elapsed), 10, Config.WORLD_H - 30);
+        game.assets.fontSmall.draw(game.batch, "[M] MENU | [K] GAME OVER", 10, 30);
         game.batch.end();
 
-        if (Gdx.input.isKeyJustPressed(Input.Keys.M)) game.setScreen(new MenuScreen(game));
-        if (Gdx.input.isKeyJustPressed(Input.Keys.K)) game.setScreen(new GameOverScreen(game, Math.round(elapsed)));
+        if (Gdx.input.isKeyJustPressed(Input.Keys.M)) {
+            game.assets.playButtonSound();
+            game.setScreen(new MenuScreen(game));
+        }
+
+        if (Gdx.input.isKeyJustPressed(Input.Keys.K)) {
+            game.assets.playButtonSound();
+            game.setScreen(new GameOverScreen(game, Math.round(elapsed)));
+        }
     }
 }
