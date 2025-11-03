@@ -23,6 +23,8 @@ public class PlayScreen extends ScreenAdapter {
         this.game = game;
         this.player = new Player();
 
+        game.assets.playMusic();
+
         if (Gdx.files.internal("gfx/road_tile.png").exists()) {
             roadTile = new Texture(Gdx.files.internal("gfx/road_tile.png"));
             roadTile.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
@@ -84,5 +86,6 @@ public class PlayScreen extends ScreenAdapter {
     public void dispose() {
         player.dispose();
         if (roadTile != null) roadTile.dispose();
+        game.assets.stopMusic();
     }
 }

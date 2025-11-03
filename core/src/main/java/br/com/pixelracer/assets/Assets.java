@@ -1,6 +1,7 @@
 package br.com.pixelracer.assets;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
@@ -12,6 +13,7 @@ public class Assets {
     public BitmapFont fontSmall;
     public BitmapFont fontBig;
     public Sound buttonSound;
+    public Music bgMusic;
     public Texture menuBg;
 
     public void load() {
@@ -43,19 +45,36 @@ public class Assets {
             buttonSound = Gdx.audio.newSound(Gdx.files.internal("sfx/button.mp3"));
         }
 
+        if (Gdx.files.internal("assets/sfx/Jeremy Blake - Powerup!.mp3").exists()) {
+            bgMusic = Gdx.audio.newMusic(Gdx.files.internal("assets/sfx/Jeremy Blake - Powerup!.mp3"));
+            bgMusic.setLooping(true);
+            bgMusic.setVolume(0.3f);
+        }
+
         if (Gdx.files.internal("assets/gfx/menu.png").exists()) {
             menuBg = new Texture(Gdx.files.internal("gfx/menu.png"));
         }
+
+
     }
 
     public void playButtonSound() {
         if (buttonSound != null) buttonSound.play(0.3f);
     }
 
+    public void playMusic() {
+        if (bgMusic != null && !bgMusic.isPlaying()) bgMusic.play();
+    }
+
+    public void stopMusic() {
+        if (bgMusic != null && bgMusic.isPlaying()) bgMusic.stop();
+    }
+
     public void dispose() {
         if (fontSmall != null) fontSmall.dispose();
         if (fontBig   != null) fontBig.dispose();
         if (buttonSound != null) buttonSound.dispose();
+        if (bgMusic != null) bgMusic.dispose();
         if (menuBg != null) menuBg.dispose();
     }
 }
