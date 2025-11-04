@@ -23,8 +23,6 @@ public class PlayScreen extends ScreenAdapter {
         this.game = game;
         this.player = new Player();
 
-        game.assets.playMusic();
-
         if (Gdx.files.internal("gfx/road_tile.png").exists()) {
             roadTile = new Texture(Gdx.files.internal("gfx/road_tile.png"));
             roadTile.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
@@ -80,6 +78,16 @@ public class PlayScreen extends ScreenAdapter {
             game.assets.playButtonSound();
             game.setScreen(new GameOverScreen(game, Math.round(timeElapsed)));
         }
+    }
+
+    @Override
+    public void show() {
+        game.assets.playMusic();
+    }
+
+    @Override
+    public void hide() {
+        game.assets.stopMusic();
     }
 
     @Override

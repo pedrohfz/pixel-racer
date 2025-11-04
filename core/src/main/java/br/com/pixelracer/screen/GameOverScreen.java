@@ -25,7 +25,9 @@ public class GameOverScreen extends ScreenAdapter {
         game.batch.begin();
         game.assets.fontBig.draw(game.batch, "GAME OVER", 80, Config.WORLD_H - 80);
         game.assets.fontSmall.draw(game.batch, "SCORE: " + score, 80, Config.WORLD_H - 130);
-        game.assets.fontSmall.draw(game.batch, "[R] JOGAR NOVAMENTE | [M] MENU", 60, 60);
+        game.assets.fontSmall.draw(game.batch, "[R] JOGAR NOVAMENTE", 30, 50);
+        game.assets.fontSmall.draw(game.batch, "[M] MENU", 30, 30);
+
         game.batch.end();
 
         if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
