@@ -16,4 +16,8 @@ public final class Config {
     public static final float SCROLL_GAIN = 1.2f;
     public static final float SCROLL_MIN  = 40f;
 
+    public static final float DASH_SPEED_MULT   = 1.25f;
+    public static final float SHAKE_MIN_SPEED   = 120f;
+    public static final float SHAKE_MAX_PIXELS  = 2.0f;
+
 }
