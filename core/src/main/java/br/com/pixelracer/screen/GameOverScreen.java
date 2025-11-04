@@ -40,4 +40,10 @@ public class GameOverScreen extends ScreenAdapter {
             game.setScreen(new MenuScreen(game));
         }
     }
+
+    @Override
+    public void show() { game.assets.playOverMusic(); }
+
+    @Override
+    public void hide() { game.assets.stopAllMusic(); }
 }

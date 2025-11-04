@@ -112,19 +112,14 @@ public class PlayScreen extends ScreenAdapter {
     }
 
     @Override
-    public void show() {
-        game.assets.playMusic();
-    }
+    public void show() { game.assets.playPlayMusic();}
 
     @Override
-    public void hide() {
-        game.assets.stopMusic();
-    }
+    public void hide() { game.assets.stopAllMusic(); }
 
     @Override
     public void dispose() {
         player.dispose();
         if (roadTile != null) roadTile.dispose();
-        game.assets.stopMusic();
     }
 }

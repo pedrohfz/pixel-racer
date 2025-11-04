@@ -42,4 +42,10 @@ public class MenuScreen extends ScreenAdapter {
             Gdx.app.exit();
         }
     }
+
+    @Override
+    public void show() { game.assets.playMenuMusic(); }
+
+    @Override
+    public void hide() { game.assets.stopAllMusic(); }
 }
