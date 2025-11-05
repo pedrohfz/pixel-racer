@@ -4,57 +4,61 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.Rectangle;
 import br.com.pixelracer.config.Config;
 
 public class Player {
-    private Texture texture;
-    private float x, y;
-    private int lane;
-    private float speed;
+    private final Texture texture;
 
-    private final float laneWidth = 100f;
-    private final float baseY = 100f;
+    private int lane = 1;
+    private float x, y;
+
+    private float speed = 0f;
 
     public Player() {
-        texture = new Texture(Gdx.files.internal("assets/gfx/player.png"));
-        lane = 1;
-        updatePosition();
+        texture = new Texture(Gdx.files.internal("gfx/player.png"));
+        y = Config.PLAYER_Y;
+        updateX();
+    }
+
+    private void updateX() {
+        float center = Config.WORLD_W / 2f;
+        float laneCenterX = center + (lane - 1) * Config.LANE_WIDTH;
+        x = laneCenterX;
     }
 
     public void update(float delta) {
         if (Gdx.input.isKeyJustPressed(Input.Keys.LEFT) && lane > 0) {
-            lane--;
-            updatePosition();
+            lane--; updateX();
         }
-        if (Gdx.input.isKeyJustPressed(Input.Keys.RIGHT) && lane < 2) {
-            lane++;
-            updatePosition();
+        if (Gdx.input.isKeyJustPressed(Input.Keys.RIGHT) && lane < Config.LANE_COUNT - 1) {
+            lane++; updateX();
         }
 
         if (Gdx.input.isKeyPressed(Input.Keys.SPACE)) {
-            speed += delta * 50;
+            speed += delta * 50f;
         } else {
-            speed -= delta * 20;
+            speed -= delta * 20f;
         }
-
-        if (speed < 0) speed = 0;
+        if (speed < 0)   speed = 0;
         if (speed > 200) speed = 200;
     }
 
     public void render(SpriteBatch batch) {
-        batch.draw(texture, x - texture.getWidth() / 2f, y);
+        batch.draw(texture, x - texture.getWidth()/2f, y);
     }
 
-    private void updatePosition() {
-        x = Config.WORLD_W / 2f + (lane - 1) * laneWidth;
-        y = baseY;
+    public Rectangle getBounds() {
+        float pad = Config.HITBOX_SHRINK;
+        return new Rectangle(
+            x - texture.getWidth()/2f + pad,
+            y + pad,
+            texture.getWidth() - pad*2f,
+            texture.getHeight() - pad*2f
+        );
     }
 
-    public float getSpeed() {
-        return speed;
-    }
+    public float getSpeed() { return speed; }
 
-    public void dispose() {
-        texture.dispose();
-    }
+    public void dispose() { texture.dispose(); }
 }

@@ -4,17 +4,21 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import br.com.pixelracer.PixelRacerGame;
 import br.com.pixelracer.config.Config;
 
 public class GameOverScreen extends ScreenAdapter {
     private final PixelRacerGame game;
-    private final int score;
+    private final int scoreSeconds;
 
-    public GameOverScreen(PixelRacerGame game, int score) {
+    public GameOverScreen(PixelRacerGame game, int scoreSeconds) {
         this.game = game;
-        this.score = score;
+        this.scoreSeconds = scoreSeconds;
     }
+
+    @Override public void show() { game.assets.playOverMusic(); }
+    @Override public void hide() { game.assets.stopAllMusic(); }
 
     @Override
     public void render(float delta) {
@@ -23,10 +27,21 @@ public class GameOverScreen extends ScreenAdapter {
 
         game.batch.setProjectionMatrix(game.camera.combined);
         game.batch.begin();
-        game.assets.fontBig.draw(game.batch, "GAME OVER", 80, Config.WORLD_H - 80);
-        game.assets.fontSmall.draw(game.batch, "SCORE: " + score, 80, Config.WORLD_H - 130);
-        game.assets.fontSmall.draw(game.batch, "[R] JOGAR NOVAMENTE", 30, 50);
-        game.assets.fontSmall.draw(game.batch, "[M] MENU", 30, 30);
+
+        GlyphLayout title = new GlyphLayout(game.assets.fontBig, "GAME OVER");
+        float tx = (Config.WORLD_W - title.width) / 2f;
+        game.assets.fontBig.draw(game.batch, title, tx, Config.WORLD_H - 100);
+
+        GlyphLayout sc = new GlyphLayout(game.assets.fontSmall, "SCORE: " + scoreSeconds);
+        game.assets.fontSmall.draw(game.batch, sc, 80, Config.WORLD_H - 170);
+
+        GlyphLayout retry = new GlyphLayout(game.assets.fontSmall, "[R] JOGAR NOVAMENTE");
+        GlyphLayout menu  = new GlyphLayout(game.assets.fontSmall, "[M] MENU");
+        float cx1 = (Config.WORLD_W - retry.width) / 2f;
+        float cx2 = (Config.WORLD_W - menu.width)  / 2f;
+
+        game.assets.fontSmall.draw(game.batch, retry, cx1, 60);
+        game.assets.fontSmall.draw(game.batch, menu,  cx2, 35);
 
         game.batch.end();
 
@@ -34,16 +49,9 @@ public class GameOverScreen extends ScreenAdapter {
             game.assets.playButtonSound();
             game.setScreen(new PlayScreen(game));
         }
-
         if (Gdx.input.isKeyJustPressed(Input.Keys.M)) {
             game.assets.playButtonSound();
             game.setScreen(new MenuScreen(game));
         }
     }
-
-    @Override
-    public void show() { game.assets.playOverMusic(); }
-
-    @Override
-    public void hide() { game.assets.stopAllMusic(); }
 }

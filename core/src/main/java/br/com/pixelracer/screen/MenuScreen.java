@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import br.com.pixelracer.PixelRacerGame;
 import br.com.pixelracer.config.Config;
 
@@ -12,6 +13,16 @@ public class MenuScreen extends ScreenAdapter {
 
     public MenuScreen(PixelRacerGame game) {
         this.game = game;
+    }
+
+    @Override
+    public void show() {
+        game.assets.playMenuMusic();
+    }
+
+    @Override
+    public void hide() {
+        game.assets.stopAllMusic();
     }
 
     @Override
@@ -26,9 +37,15 @@ public class MenuScreen extends ScreenAdapter {
             game.batch.draw(game.assets.menuBg, 0, 0, Config.WORLD_W, Config.WORLD_H);
         }
 
-        game.assets.fontBig.draw(game.batch, "PIXEL RACER", 60, Config.WORLD_H - 80);
-        game.assets.fontSmall.draw(game.batch, "ENTER: JOGAR", 60, Config.WORLD_H - 150);
-        game.assets.fontSmall.draw(game.batch, "ESC: SAIR", 60, Config.WORLD_H - 175);
+        GlyphLayout title = new GlyphLayout(game.assets.fontBig, "PIXEL RACER");
+        float tx = (Config.WORLD_W - title.width) / 2f;
+        game.assets.fontBig.draw(game.batch, title, tx, Config.WORLD_H - 80);
+
+        GlyphLayout op1 = new GlyphLayout(game.assets.fontSmall, "ENTER: INICIAR");
+        GlyphLayout op2 = new GlyphLayout(game.assets.fontSmall, "ESC: SAIR");
+
+        game.assets.fontSmall.draw(game.batch, op1, 60, Config.WORLD_H - 150);
+        game.assets.fontSmall.draw(game.batch, op2, 60, Config.WORLD_H - 175);
 
         game.batch.end();
 
@@ -36,16 +53,9 @@ public class MenuScreen extends ScreenAdapter {
             game.assets.playButtonSound();
             game.setScreen(new PlayScreen(game));
         }
-
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
             game.assets.playButtonSound();
             Gdx.app.exit();
         }
     }
-
-    @Override
-    public void show() { game.assets.playMenuMusic(); }
-
-    @Override
-    public void hide() { game.assets.stopAllMusic(); }
 }

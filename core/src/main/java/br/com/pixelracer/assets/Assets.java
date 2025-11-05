@@ -12,73 +12,66 @@ import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator.FreeTypeFont
 public class Assets {
     public BitmapFont fontSmall;
     public BitmapFont fontBig;
+
+    public Texture menuBg;
+
     public Sound buttonSound;
 
     public Music musicMenu;
     public Music musicPlay;
     public Music musicOver;
 
-    public Texture menuBg;
-
     public void load() {
-        if (Gdx.files.internal("assets/fonts/PressStart2P.ttf").exists()) {
-            FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("assets/fonts/PressStart2P.ttf"));
+        if (Gdx.files.internal("fonts/font.ttf").exists()) {
+            FreeTypeFontGenerator gen = new FreeTypeFontGenerator(Gdx.files.internal("fonts/font.ttf"));
 
-            FreeTypeFontParameter smallParam = new FreeTypeFontParameter();
-            smallParam.size = 16;
-            smallParam.color = Color.WHITE;
-            smallParam.borderWidth = 2;
-            smallParam.borderColor = Color.BLACK;
-            smallParam.minFilter = Texture.TextureFilter.Nearest;
-            smallParam.magFilter = Texture.TextureFilter.Nearest;
+            FreeTypeFontParameter pSmall = new FreeTypeFontParameter();
+            pSmall.size = 16;
+            pSmall.color = Color.WHITE;
+            pSmall.borderWidth = 2;
+            pSmall.borderColor = Color.BLACK;
 
-            FreeTypeFontParameter bigParam = new FreeTypeFontParameter();
-            bigParam.size = 24;
-            bigParam.color = Color.WHITE;
-            bigParam.borderWidth = 3;
-            bigParam.borderColor = Color.BLACK;
-            bigParam.minFilter = Texture.TextureFilter.Nearest;
-            bigParam.magFilter = Texture.TextureFilter.Nearest;
+            FreeTypeFontParameter pBig = new FreeTypeFontParameter();
+            pBig.size = 24;
+            pBig.color = Color.WHITE;
+            pBig.borderWidth = 3;
+            pBig.borderColor = Color.BLACK;
 
-            fontSmall = generator.generateFont(smallParam);
-            fontBig   = generator.generateFont(bigParam);
-            generator.dispose();
+            fontSmall = gen.generateFont(pSmall);
+            fontBig   = gen.generateFont(pBig);
+            gen.dispose();
         }
 
-        if (Gdx.files.internal("assets/sfx/button.mp3").exists()) {
+        if (Gdx.files.internal("gfx/menu.png").exists()) {
+            menuBg = new Texture(Gdx.files.internal("gfx/menu.png"));
+        }
+
+        if (Gdx.files.internal("sfx/button.mp3").exists()) {
             buttonSound = Gdx.audio.newSound(Gdx.files.internal("sfx/button.mp3"));
         }
 
-        if (Gdx.files.internal("assets/sfx/Joshua McLean - Mountain Trials.mp3").exists()) {
-            musicMenu = Gdx.audio.newMusic(Gdx.files.internal("assets/sfx/Joshua McLean - Mountain Trials.mp3"));
+        if (Gdx.files.internal("sfx/music_menu.mp3").exists()) {
+            musicMenu = Gdx.audio.newMusic(Gdx.files.internal("sfx/music_menu.mp3"));
             musicMenu.setLooping(true);
             musicMenu.setVolume(0.35f);
         }
 
-        if (Gdx.files.internal("assets/sfx/Jeremy Blake - Powerup!.mp3").exists()) {
-            musicPlay = Gdx.audio.newMusic(Gdx.files.internal("assets/sfx/Jeremy Blake - Powerup!.mp3"));
+        if (Gdx.files.internal("sfx/music_play.mp3").exists()) {
+            musicPlay = Gdx.audio.newMusic(Gdx.files.internal("sfx/music_play.mp3"));
             musicPlay.setLooping(true);
             musicPlay.setVolume(0.30f);
         }
 
-        if (Gdx.files.internal("assets/sfx/GameOver8bits.mp3").exists()) {
-            musicOver = Gdx.audio.newMusic(Gdx.files.internal("assets/sfx/GameOver8bits.mp3"));
+        if (Gdx.files.internal("sfx/music_over.mp3").exists()) {
+            musicOver = Gdx.audio.newMusic(Gdx.files.internal("sfx/music_over.mp3"));
             musicOver.setLooping(true);
             musicOver.setVolume(0.30f);
-        }
-
-        if (Gdx.files.internal("assets/gfx/menu.png").exists()) {
-            menuBg = new Texture(Gdx.files.internal("gfx/menu.png"));
         }
     }
 
     public void playButtonSound() {
-        if (buttonSound != null) buttonSound.play(0.3f);
+        if (buttonSound != null) buttonSound.play(0.5f);
     }
-
-    public void playMenuMusic() { stopAllMusic(); if (musicMenu != null) musicMenu.play(); }
-    public void playPlayMusic() { stopAllMusic(); if (musicPlay != null) musicPlay.play(); }
-    public void playOverMusic() { stopAllMusic(); if (musicOver != null) musicOver.play(); }
 
     public void stopAllMusic() {
         if (musicMenu != null) musicMenu.stop();
@@ -86,13 +79,17 @@ public class Assets {
         if (musicOver != null) musicOver.stop();
     }
 
+    public void playMenuMusic() { stopAllMusic(); if (musicMenu != null) musicMenu.play(); }
+    public void playPlayMusic() { stopAllMusic(); if (musicPlay != null) musicPlay.play(); }
+    public void playOverMusic() { stopAllMusic(); if (musicOver != null) musicOver.play(); }
+
     public void dispose() {
         if (fontSmall != null) fontSmall.dispose();
         if (fontBig   != null) fontBig.dispose();
+        if (menuBg != null) menuBg.dispose();
         if (buttonSound != null) buttonSound.dispose();
         if (musicMenu != null) musicMenu.dispose();
         if (musicPlay != null) musicPlay.dispose();
         if (musicOver != null) musicOver.dispose();
-        if (menuBg != null) menuBg.dispose();
     }
 }
