@@ -7,6 +7,7 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
+
 import br.com.pixelracer.PixelRacerGame;
 import br.com.pixelracer.config.Config;
 import br.com.pixelracer.entity.Player;
@@ -22,10 +23,11 @@ public class PlayScreen extends ScreenAdapter {
 
     private final Array<Obstacle> obstacles = new Array<>();
     private float spawnTimer = 0f;
+    private final float[] laneCooldown = new float[Config.LANE_COUNT];
 
     private float camBaseX, camBaseY;
 
-    private float timeElapsed;
+    private float timeElapsed = 0f;
 
     public PlayScreen(PixelRacerGame game) {
         this.game = game;
@@ -42,32 +44,54 @@ public class PlayScreen extends ScreenAdapter {
             float srcH = roadTile.getHeight();
             float scale = Config.WORLD_W / srcW;
             tileH = srcH * scale;
-        } else if (Gdx.files.internal("gfx/road.png").exists()) {
-            roadTile = new Texture(Gdx.files.internal("gfx/road.png"));
-            roadTile.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
-            tileH = Config.WORLD_H;
         }
-
-        timeElapsed = 0f;
     }
 
-    @Override public void show() { game.assets.playPlayMusic(); }
-    @Override public void hide() { game.assets.stopAllMusic(); }
+    @Override
+    public void show() {
+        game.assets.playPlayMusic();
+    }
+
+    @Override
+    public void hide() {
+        game.assets.stopAllMusic();
+    }
 
     @Override
     public void render(float delta) {
-        float dt = Math.min(delta, 1f/30f);
+        final float dt = Math.min(delta, 1f / 30f);
 
         player.update(dt);
+
+        for (int i = 0; i < laneCooldown.length; i++) {
+            laneCooldown[i] -= dt;
+        }
+
         float pxPerSecond = Math.max(Config.SCROLL_MIN, player.getSpeed() * Config.SCROLL_GAIN);
         scrollY += pxPerSecond * dt;
 
         spawnTimer -= dt;
-        float interval = MathUtils.lerp(Config.SPAWN_MIN_SEC, Config.SPAWN_BASE_SEC,
-            MathUtils.clamp(1f - (player.getSpeed()/200f), 0f, 1f));
+
+        float intervalBase = MathUtils.lerp(
+            Config.SPAWN_MIN_SEC,
+            Config.SPAWN_BASE_SEC,
+            MathUtils.clamp(1f - (player.getSpeed() / 200f), 0f, 1f)); // 200 ~ vmax
+
+        float jitterFactor = 1f + MathUtils.random(-Config.SPAWN_JITTER, Config.SPAWN_JITTER);
+        float intervalThis = Math.max(0.25f, intervalBase * jitterFactor);
+
         if (spawnTimer <= 0f) {
-            spawnRandomObstacle();
-            spawnTimer = interval;
+            boolean spawned = false;
+            int attempts = 5; // evita loop infinito
+            while (!spawned && attempts-- > 0) {
+                int lane = MathUtils.random(0, Config.LANE_COUNT - 1);
+                if (laneCooldown[lane] <= 0f) {
+                    spawnObstacleOnLane(lane);
+                    laneCooldown[lane] = intervalThis * Config.LANE_COOLDOWN_FACTOR;
+                    spawned = true;
+                }
+            }
+            spawnTimer = intervalThis;
         }
 
         float dy = pxPerSecond * dt;
@@ -124,8 +148,7 @@ public class PlayScreen extends ScreenAdapter {
         }
     }
 
-    private void spawnRandomObstacle() {
-        int lane = MathUtils.random(0, Config.LANE_COUNT - 1);
+    private void spawnObstacleOnLane(int lane) {
         float startY = Config.WORLD_H + 40f;
         obstacles.add(new Obstacle("gfx/cone.png", lane, startY));
     }
@@ -140,7 +163,7 @@ public class PlayScreen extends ScreenAdapter {
         float amp = Config.SHAKE_MAX_PIXELS * t;
 
         game.camera.position.add(MathUtils.random(-amp, amp),
-            MathUtils.random(-amp, amp*0.6f), 0);
+            MathUtils.random(-amp, amp * 0.6f), 0);
         game.camera.update();
     }
 

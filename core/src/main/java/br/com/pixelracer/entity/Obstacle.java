@@ -16,9 +16,7 @@ public class Obstacle {
         this.lane = lane;
         this.y    = startY;
 
-        float center = Config.WORLD_W / 2f;
-        float laneCenterX = center + (lane - 1) * Config.LANE_WIDTH;
-        this.x = laneCenterX - tex.getWidth() / 2f;
+        this.x = Config.laneCenterX(lane) - tex.getWidth() / 2f;
     }
 
     public void update(float dy) { y -= dy; }

@@ -22,9 +22,7 @@ public class Player {
     }
 
     private void updateX() {
-        float center = Config.WORLD_W / 2f;
-        float laneCenterX = center + (lane - 1) * Config.LANE_WIDTH;
-        x = laneCenterX;
+        x = Config.laneCenterX(lane);
     }
 
     public void update(float delta) {
