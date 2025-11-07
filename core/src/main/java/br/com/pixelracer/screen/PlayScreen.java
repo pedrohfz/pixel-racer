@@ -1,7 +1,6 @@
 package br.com.pixelracer.screen;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
 import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
@@ -12,8 +11,11 @@ import br.com.pixelracer.PixelRacerGame;
 import br.com.pixelracer.config.Config;
 import br.com.pixelracer.entity.Player;
 import br.com.pixelracer.entity.Obstacle;
+import br.com.pixelracer.entity.Oil;
+import br.com.pixelracer.entity.PowerUp;
 
 public class PlayScreen extends ScreenAdapter {
+
     private final PixelRacerGame game;
     private Player player;
 
@@ -31,6 +33,9 @@ public class PlayScreen extends ScreenAdapter {
     private float nextBurstIn = 0f;
     private float burstLeft = 0f;
 
+    private float oilTimer = 0f;
+    private float invincibleTimer = 0f;
+
     public PlayScreen(PixelRacerGame game) {
         this.game = game;
         this.player = new Player();
@@ -41,7 +46,6 @@ public class PlayScreen extends ScreenAdapter {
         if (Gdx.files.internal("gfx/road_tile.png").exists()) {
             roadTile = new Texture(Gdx.files.internal("gfx/road_tile.png"));
             roadTile.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
-
             float srcW = roadTile.getWidth();
             float srcH = roadTile.getHeight();
             float scale = Config.WORLD_W / srcW;
@@ -67,14 +71,15 @@ public class PlayScreen extends ScreenAdapter {
 
         player.update(dt);
 
-        for (int i = 0; i < laneCooldown.length; i++) {
-            laneCooldown[i] -= dt;
-        }
+        for (int i = 0; i < laneCooldown.length; i++) laneCooldown[i] -= dt;
 
-        float pxPerSecond = Math.max(Config.SCROLL_MIN, player.getSpeed() * Config.SCROLL_GAIN);
+        float speedMul = (oilTimer > 0f && invincibleTimer <= 0f) ? Config.OIL_SLOW_FACTOR : 1f;
+        float pxPerSecond = Math.max(Config.SCROLL_MIN, player.getSpeed() * Config.SCROLL_GAIN) * speedMul;
         scrollY += pxPerSecond * dt;
 
         timeElapsed += dt;
+        if (oilTimer > 0f) oilTimer -= dt;
+        if (invincibleTimer > 0f) invincibleTimer -= dt;
 
         if (burstLeft > 0f) {
             burstLeft -= dt;
@@ -84,9 +89,7 @@ public class PlayScreen extends ScreenAdapter {
             }
         } else {
             nextBurstIn -= dt;
-            if (nextBurstIn <= 0f) {
-                burstLeft = Config.BURST_DURATION_S;
-            }
+            if (nextBurstIn <= 0f) burstLeft = Config.BURST_DURATION_S;
         }
 
         spawnTimer -= dt;
@@ -112,7 +115,7 @@ public class PlayScreen extends ScreenAdapter {
             while (!spawned && attempts-- > 0) {
                 int lane = MathUtils.random(0, Config.LANE_COUNT - 1);
                 if (laneCooldown[lane] <= 0f) {
-                    spawnObstacleOnLane(lane);
+                    spawnVariedOnLane(lane, Config.WORLD_H + 40f);
                     laneCooldown[lane] = intervalThis * laneFactor;
                     spawned = true;
                 }
@@ -130,9 +133,35 @@ public class PlayScreen extends ScreenAdapter {
             }
         }
 
-        for (Obstacle o : obstacles) {
-            if (o.getBounds().overlaps(player.getBounds())) {
-                game.assets.playButtonSound();
+        boolean invincible = invincibleTimer > 0f;
+        for (int i = obstacles.size - 1; i >= 0; i--) {
+            Obstacle o = obstacles.get(i);
+            if (!o.getBounds().overlaps(player.getBounds())) continue;
+
+            if (o instanceof PowerUp) {
+                invincibleTimer = Math.max(invincibleTimer, Config.POWERUP_DURATION_S);
+                game.assets.playPowerUpSound();
+                o.dispose();
+                obstacles.removeIndex(i);
+                continue;
+            }
+
+            if (o instanceof Oil) {
+                if (!invincible) {
+                    boolean wasOff = oilTimer <= 0f;
+                    oilTimer = Config.OIL_EFFECT_S;
+                    if (wasOff) game.assets.playSkidSound();
+                }
+                o.dispose();
+                obstacles.removeIndex(i);
+                continue;
+            }
+
+            if (invincible) {
+                o.dispose();
+                obstacles.removeIndex(i);
+            } else {
+                game.assets.playHitSound();
                 game.setScreen(new GameOverScreen(game, Math.round(timeElapsed)));
                 return;
             }
@@ -159,18 +188,12 @@ public class PlayScreen extends ScreenAdapter {
 
         game.assets.fontSmall.draw(game.batch, String.format("Speed: %.0f", player.getSpeed()), 20, Config.WORLD_H - 20);
         game.assets.fontSmall.draw(game.batch, String.format("Time: %.1f", timeElapsed), 20, Config.WORLD_H - 40);
+        if (invincible) {
+            game.assets.fontSmall.draw(game.batch, "STAR!", Config.WORLD_W - 90, Config.WORLD_H - 20);
+        }
         game.assets.fontSmall.draw(game.batch, "M: MENU | K: GAME OVER", 20, 30);
 
         game.batch.end();
-
-        if (Gdx.input.isKeyJustPressed(Input.Keys.M)) {
-            game.assets.playButtonSound();
-            game.setScreen(new MenuScreen(game));
-        }
-        if (Gdx.input.isKeyJustPressed(Input.Keys.K)) {
-            game.assets.playButtonSound();
-            game.setScreen(new GameOverScreen(game, Math.round(timeElapsed)));
-        }
     }
 
     private float difficultyTimeMul(float elapsed) {
@@ -183,9 +206,15 @@ public class PlayScreen extends ScreenAdapter {
         return MathUtils.lerp(Config.LANE_COOLDOWN_BASE, Config.LANE_COOLDOWN_MIN, t);
     }
 
-    private void spawnObstacleOnLane(int lane) {
-        float startY = Config.WORLD_H + 40f;
-        obstacles.add(new Obstacle("gfx/cone.png", lane, startY));
+    private void spawnVariedOnLane(int lane, float startY) {
+        float r = MathUtils.random(1f);
+        if (r < Config.WEIGHT_CONE) {
+            obstacles.add(new Obstacle("gfx/cone.png", lane, startY));
+        } else if (r < Config.WEIGHT_CONE + Config.WEIGHT_OIL) {
+            obstacles.add(new Oil(lane, startY));
+        } else {
+            obstacles.add(new PowerUp(lane, startY));
+        }
     }
 
     private void applyCameraShake() {
@@ -193,6 +222,7 @@ public class PlayScreen extends ScreenAdapter {
         float spd = player.getSpeed();
         if (spd < Config.SHAKE_MIN_SPEED) { game.camera.update(); return; }
         float t = MathUtils.clamp((spd - Config.SHAKE_MIN_SPEED) / 80f, 0f, 1f);
+        t = t * t;
         float amp = Config.SHAKE_MAX_PIXELS * t;
         game.camera.position.add(MathUtils.random(-amp, amp), MathUtils.random(-amp, amp * 0.6f), 0);
         game.camera.update();

@@ -16,6 +16,9 @@ public class Assets {
     public Texture menuBg;
 
     public Sound buttonSound;
+    private Sound sfxPowerup;
+    private Sound sfxHitCone;
+    private Sound sfxSkid;
 
     public Music musicMenu;
     public Music musicPlay;
@@ -46,10 +49,6 @@ public class Assets {
             menuBg = new Texture(Gdx.files.internal("gfx/menu.png"));
         }
 
-        if (Gdx.files.internal("sfx/button.mp3").exists()) {
-            buttonSound = Gdx.audio.newSound(Gdx.files.internal("sfx/button.mp3"));
-        }
-
         if (Gdx.files.internal("sfx/music_menu.mp3").exists()) {
             musicMenu = Gdx.audio.newMusic(Gdx.files.internal("sfx/music_menu.mp3"));
             musicMenu.setLooping(true);
@@ -67,11 +66,27 @@ public class Assets {
             musicOver.setLooping(true);
             musicOver.setVolume(0.30f);
         }
+
+        if (Gdx.files.internal("sfx/button.mp3").exists()) {
+            buttonSound = Gdx.audio.newSound(Gdx.files.internal("sfx/button.mp3"));
+        }
+
+        if (Gdx.files.internal("sfx/powerup.mp3").exists()) {
+            sfxPowerup = Gdx.audio.newSound(Gdx.files.internal("sfx/powerup.mp3"));
+        }
+
+        if (Gdx.files.internal("sfx/hit.mp3").exists()) {
+            sfxHitCone = Gdx.audio.newSound(Gdx.files.internal("sfx/hit.mp3"));
+        }
+
+        if (Gdx.files.internal("sfx/skid.mp3").exists()) {
+            sfxSkid = Gdx.audio.newSound(Gdx.files.internal("sfx/skid.mp3"));
+        }
     }
 
-    public void playButtonSound() {
-        if (buttonSound != null) buttonSound.play(0.5f);
-    }
+    public void playMenuMusic() { stopAllMusic(); if (musicMenu != null) musicMenu.play(); }
+    public void playPlayMusic() { stopAllMusic(); if (musicPlay != null) musicPlay.play(); }
+    public void playOverMusic() { stopAllMusic(); if (musicOver != null) musicOver.play(); }
 
     public void stopAllMusic() {
         if (musicMenu != null) musicMenu.stop();
@@ -79,9 +94,19 @@ public class Assets {
         if (musicOver != null) musicOver.stop();
     }
 
-    public void playMenuMusic() { stopAllMusic(); if (musicMenu != null) musicMenu.play(); }
-    public void playPlayMusic() { stopAllMusic(); if (musicPlay != null) musicPlay.play(); }
-    public void playOverMusic() { stopAllMusic(); if (musicOver != null) musicOver.play(); }
+    private void playLoop(Music m) {
+        stopAllMusic();
+        if (m != null) {
+            m.setLooping(true);
+            m.setVolume(1f);
+            m.play();
+        }
+    }
+
+    public void playButtonSound() { if (buttonSound != null) buttonSound.play(0.5f); }
+    public void playPowerUpSound() { if (sfxPowerup != null) sfxPowerup.play(0.5f); }
+    public void playHitSound() { if (sfxHitCone != null) sfxHitCone.play(1.0f); }
+    public void playSkidSound() { if (sfxSkid != null) sfxSkid.play(0.5f); }
 
     public void dispose() {
         if (fontSmall != null) fontSmall.dispose();
@@ -91,5 +116,8 @@ public class Assets {
         if (musicMenu != null) musicMenu.dispose();
         if (musicPlay != null) musicPlay.dispose();
         if (musicOver != null) musicOver.dispose();
+        if (sfxPowerup != null) sfxPowerup.dispose();
+        if (sfxHitCone != null) sfxHitCone.dispose();
+        if (sfxSkid != null) sfxSkid.dispose();
     }
 }

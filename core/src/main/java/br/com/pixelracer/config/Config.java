@@ -42,4 +42,13 @@ public class Config {
 
     public static final float LANE_COOLDOWN_BASE = 0.80f;
     public static final float LANE_COOLDOWN_MIN = 0.60f;
+
+    public static final float WEIGHT_CONE = 0.74f;
+    public static final float WEIGHT_OIL  = 0.18f;
+    public static final float WEIGHT_STAR = 0.08f;
+
+    public static final float POWERUP_DURATION_S = 5.0f;
+
+    public static final float OIL_SLOW_FACTOR = 0.70f;
+    public static final float OIL_EFFECT_S     = 1.25f;
 }
