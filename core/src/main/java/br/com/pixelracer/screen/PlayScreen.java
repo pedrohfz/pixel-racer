@@ -18,8 +18,8 @@ public class PlayScreen extends ScreenAdapter {
     private Player player;
 
     private Texture roadTile;
-    private float   tileH;
-    private float   scrollY = 0f;
+    private float tileH;
+    private float scrollY = 0f;
 
     private final Array<Obstacle> obstacles = new Array<>();
     private float spawnTimer = 0f;
@@ -28,6 +28,8 @@ public class PlayScreen extends ScreenAdapter {
     private float camBaseX, camBaseY;
 
     private float timeElapsed = 0f;
+    private float nextBurstIn = 0f;
+    private float burstLeft = 0f;
 
     public PlayScreen(PixelRacerGame game) {
         this.game = game;
@@ -45,6 +47,8 @@ public class PlayScreen extends ScreenAdapter {
             float scale = Config.WORLD_W / srcW;
             tileH = srcH * scale;
         }
+
+        nextBurstIn = MathUtils.random(Config.BURST_MIN_INTERVAL_S, Config.BURST_MAX_INTERVAL_S);
     }
 
     @Override
@@ -70,24 +74,46 @@ public class PlayScreen extends ScreenAdapter {
         float pxPerSecond = Math.max(Config.SCROLL_MIN, player.getSpeed() * Config.SCROLL_GAIN);
         scrollY += pxPerSecond * dt;
 
+        timeElapsed += dt;
+
+        if (burstLeft > 0f) {
+            burstLeft -= dt;
+            if (burstLeft <= 0f) {
+                nextBurstIn = MathUtils.random(Config.BURST_MIN_INTERVAL_S, Config.BURST_MAX_INTERVAL_S);
+                burstLeft = 0f;
+            }
+        } else {
+            nextBurstIn -= dt;
+            if (nextBurstIn <= 0f) {
+                burstLeft = Config.BURST_DURATION_S;
+            }
+        }
+
         spawnTimer -= dt;
 
         float intervalBase = MathUtils.lerp(
             Config.SPAWN_MIN_SEC,
             Config.SPAWN_BASE_SEC,
-            MathUtils.clamp(1f - (player.getSpeed() / 200f), 0f, 1f)); // 200 ~ vmax
+            MathUtils.clamp(1f - (player.getSpeed() / 200f), 0f, 1f)
+        );
 
+        float timeMul = difficultyTimeMul(timeElapsed);
         float jitterFactor = 1f + MathUtils.random(-Config.SPAWN_JITTER, Config.SPAWN_JITTER);
-        float intervalThis = Math.max(0.25f, intervalBase * jitterFactor);
+
+        float intervalThis = intervalBase * timeMul * jitterFactor;
+        if (burstLeft > 0f) intervalThis *= Config.BURST_MULT;
+        intervalThis = Math.max(0.25f, intervalThis);
 
         if (spawnTimer <= 0f) {
             boolean spawned = false;
-            int attempts = 5; // evita loop infinito
+            int attempts = 5;
+            float laneFactor = laneCooldownFactor(timeElapsed);
+
             while (!spawned && attempts-- > 0) {
                 int lane = MathUtils.random(0, Config.LANE_COUNT - 1);
                 if (laneCooldown[lane] <= 0f) {
                     spawnObstacleOnLane(lane);
-                    laneCooldown[lane] = intervalThis * Config.LANE_COOLDOWN_FACTOR;
+                    laneCooldown[lane] = intervalThis * laneFactor;
                     spawned = true;
                 }
             }
@@ -121,19 +147,18 @@ public class PlayScreen extends ScreenAdapter {
         game.batch.begin();
 
         if (roadTile != null) {
-            float yStart = - (scrollY % tileH);
-            game.batch.draw(roadTile, 0, yStart,               Config.WORLD_W, tileH);
-            game.batch.draw(roadTile, 0, yStart + tileH,       Config.WORLD_W, tileH);
-            game.batch.draw(roadTile, 0, yStart + tileH * 2f,  Config.WORLD_W, tileH);
+            float yStart = -(scrollY % tileH);
+            game.batch.draw(roadTile, 0, yStart, Config.WORLD_W, tileH);
+            game.batch.draw(roadTile, 0, yStart + tileH, Config.WORLD_W, tileH);
+            game.batch.draw(roadTile, 0, yStart + tileH * 2f, Config.WORLD_W, tileH);
         }
 
         for (Obstacle o : obstacles) o.render(game.batch);
 
         player.render(game.batch);
 
-        timeElapsed += dt;
         game.assets.fontSmall.draw(game.batch, String.format("Speed: %.0f", player.getSpeed()), 20, Config.WORLD_H - 20);
-        game.assets.fontSmall.draw(game.batch, String.format("Time: %.1f",  timeElapsed),       20, Config.WORLD_H - 40);
+        game.assets.fontSmall.draw(game.batch, String.format("Time: %.1f", timeElapsed), 20, Config.WORLD_H - 40);
         game.assets.fontSmall.draw(game.batch, "M: MENU | K: GAME OVER", 20, 30);
 
         game.batch.end();
@@ -148,6 +173,16 @@ public class PlayScreen extends ScreenAdapter {
         }
     }
 
+    private float difficultyTimeMul(float elapsed) {
+        float t = MathUtils.clamp(elapsed / Config.TIME_FULL_DIFFICULTY_S, 0f, 1f);
+        return MathUtils.lerp(1f, Config.DIFF_TIME_MIN_MUL, t);
+    }
+
+    private float laneCooldownFactor(float elapsed) {
+        float t = MathUtils.clamp(elapsed / Config.TIME_FULL_DIFFICULTY_S, 0f, 1f);
+        return MathUtils.lerp(Config.LANE_COOLDOWN_BASE, Config.LANE_COOLDOWN_MIN, t);
+    }
+
     private void spawnObstacleOnLane(int lane) {
         float startY = Config.WORLD_H + 40f;
         obstacles.add(new Obstacle("gfx/cone.png", lane, startY));
@@ -155,15 +190,11 @@ public class PlayScreen extends ScreenAdapter {
 
     private void applyCameraShake() {
         game.camera.position.set(camBaseX, camBaseY, 0);
-
         float spd = player.getSpeed();
         if (spd < Config.SHAKE_MIN_SPEED) { game.camera.update(); return; }
-
-        float t   = MathUtils.clamp((spd - Config.SHAKE_MIN_SPEED) / 80f, 0f, 1f);
+        float t = MathUtils.clamp((spd - Config.SHAKE_MIN_SPEED) / 80f, 0f, 1f);
         float amp = Config.SHAKE_MAX_PIXELS * t;
-
-        game.camera.position.add(MathUtils.random(-amp, amp),
-            MathUtils.random(-amp, amp * 0.6f), 0);
+        game.camera.position.add(MathUtils.random(-amp, amp), MathUtils.random(-amp, amp * 0.6f), 0);
         game.camera.update();
     }
 
