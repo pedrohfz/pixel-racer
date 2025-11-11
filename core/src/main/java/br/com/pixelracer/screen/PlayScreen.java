@@ -1,6 +1,8 @@
 package br.com.pixelracer.screen;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
+import com.badlogic.gdx.Preferences;
 import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Pixmap;
@@ -47,6 +49,9 @@ public class PlayScreen extends ScreenAdapter {
 
     private final Array<Particle> particles = new Array<>(64);
 
+    private int bestTime = 0;
+    private boolean paused = false;
+
     public PlayScreen(PixelRacerGame game) {
         this.game = game;
         this.player = new Player();
@@ -70,6 +75,9 @@ public class PlayScreen extends ScreenAdapter {
         pm.dispose();
 
         nextBurstIn = MathUtils.random(Config.BURST_MIN_INTERVAL_S, Config.BURST_MAX_INTERVAL_S);
+
+        Preferences prefs = Gdx.app.getPreferences("pixelracer");
+        bestTime = prefs.getInteger("bestTime", 0);
     }
 
     @Override
@@ -84,9 +92,11 @@ public class PlayScreen extends ScreenAdapter {
 
     @Override
     public void render(float delta) {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.P)) paused = !paused;
+
         final float dt = Math.min(delta, 1f / 30f);
 
-        if (!pendingGameOver) {
+        if (!pendingGameOver && !paused) {
             player.update(dt);
 
             for (int i = 0; i < laneCooldown.length; i++) laneCooldown[i] -= dt;
@@ -194,16 +204,23 @@ public class PlayScreen extends ScreenAdapter {
                 }
             }
         } else {
-            if (impactDelay > 0f) {
-                impactDelay -= dt;
-                if (impactDelay <= 0f) {
-                    game.setScreen(new GameOverScreen(game, Math.round(timeElapsed)));
-                    return;
+            if (pendingGameOver) {
+                if (impactDelay > 0f) {
+                    impactDelay -= dt;
+                    if (impactDelay <= 0f) {
+                        if (Math.round(timeElapsed) > bestTime) {
+                            Preferences prefs = Gdx.app.getPreferences("pixelracer");
+                            prefs.putInteger("bestTime", Math.round(timeElapsed));
+                            prefs.flush();
+                        }
+                        game.setScreen(new GameOverScreen(game, Math.round(timeElapsed)));
+                        return;
+                    }
                 }
             }
         }
 
-        if (!pendingGameOver) {
+        if (!pendingGameOver && !paused) {
             for (int i = particles.size - 1; i >= 0; i--) {
                 Particle p = particles.get(i);
                 p.life -= dt;
@@ -221,7 +238,7 @@ public class PlayScreen extends ScreenAdapter {
         if (powerupBlinkAlpha > 0f) powerupBlinkAlpha = Math.max(0f, powerupBlinkAlpha - dt * 3f);
         if (impactFlashAlpha > 0f) impactFlashAlpha = Math.max(0f, impactFlashAlpha - dt * 5f);
 
-        if (!pendingGameOver) applyCameraShake(); else { game.camera.position.set(camBaseX, camBaseY, 0); game.camera.update(); }
+        if (!pendingGameOver && !paused) applyCameraShake(); else { game.camera.position.set(camBaseX, camBaseY, 0); game.camera.update(); }
 
         Gdx.gl.glClearColor(Config.BG_R, Config.BG_G, Config.BG_B, Config.BG_A);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
@@ -249,11 +266,20 @@ public class PlayScreen extends ScreenAdapter {
 
         game.assets.fontSmall.draw(game.batch, String.format("Speed: %.0f", player.getSpeed()), 20, Config.WORLD_H - 20);
         game.assets.fontSmall.draw(game.batch, String.format("Time: %.1f", timeElapsed), 20, Config.WORLD_H - 40);
+        game.assets.fontSmall.draw(game.batch, String.format("Best: %ds", bestTime), 20, Config.WORLD_H - 60);
 
         if (invincibleTimer > 0f) {
             game.assets.fontSmall.draw(game.batch, "STAR!", Config.WORLD_W - 90, Config.WORLD_H - 20);
         } else if (oilTimer > 0f) {
             game.assets.fontSmall.draw(game.batch, "OIL!", Config.WORLD_W - 90, Config.WORLD_H - 20);
+        }
+
+        if (paused) {
+            game.batch.setColor(0, 0, 0, 0.45f);
+            game.batch.draw(white1x1, 0, 0, Config.WORLD_W, Config.WORLD_H);
+            game.batch.setColor(1, 1, 1, 1);
+            String t = "PAUSED";
+            game.assets.fontSmall.draw(game.batch, t, Config.WORLD_W * 0.5f - 48, Config.WORLD_H * 0.55f);
         }
 
         if (powerupBlinkAlpha > 0f) {

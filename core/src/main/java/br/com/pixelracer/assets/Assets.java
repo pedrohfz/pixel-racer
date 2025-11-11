@@ -86,7 +86,15 @@ public class Assets {
 
     public void playMenuMusic() { stopAllMusic(); if (musicMenu != null) musicMenu.play(); }
     public void playPlayMusic() { stopAllMusic(); if (musicPlay != null) musicPlay.play(); }
-    public void playOverMusic() { stopAllMusic(); if (musicOver != null) musicOver.play(); }
+
+    public void playOverMusic() {
+        stopAllMusic();
+        if (musicOver != null) {
+            musicOver.setLooping(false);
+            musicOver.setVolume(1f);
+            musicOver.play();
+        }
+    }
 
     public void stopAllMusic() {
         if (musicMenu != null) musicMenu.stop();

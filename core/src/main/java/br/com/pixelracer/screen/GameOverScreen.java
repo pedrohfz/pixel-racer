@@ -2,50 +2,87 @@ package br.com.pixelracer.screen;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.Preferences;
 import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
+
 import br.com.pixelracer.PixelRacerGame;
 import br.com.pixelracer.config.Config;
 
 public class GameOverScreen extends ScreenAdapter {
-    private final PixelRacerGame game;
-    private final int scoreSeconds;
 
-    public GameOverScreen(PixelRacerGame game, int scoreSeconds) {
+    private final PixelRacerGame game;
+    private final int finalScore;
+    private int bestScore;
+
+    private final GlyphLayout layout = new GlyphLayout();
+
+    public GameOverScreen(PixelRacerGame game, int finalScore) {
         this.game = game;
-        this.scoreSeconds = scoreSeconds;
+        this.finalScore = finalScore;
+
+        Preferences prefs = Gdx.app.getPreferences("pixelracer");
+        bestScore = prefs.getInteger("bestTime", 0);
+        if (finalScore > bestScore) {
+            bestScore = finalScore;
+            prefs.putInteger("bestTime", bestScore);
+            prefs.flush();
+        }
     }
 
-    @Override public void show() { game.assets.playOverMusic(); }
-    @Override public void hide() { game.assets.stopAllMusic(); }
+    @Override
+    public void show() {
+        game.assets.playOverMusic();
+    }
+
+    @Override
+    public void hide() {
+        game.assets.stopAllMusic();
+    }
 
     @Override
     public void render(float delta) {
-        Gdx.gl.glClearColor(0.12f, 0.06f, 0.06f, 1f);
+        Gdx.gl.glClearColor(0.18f, 0.02f, 0.02f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         game.batch.setProjectionMatrix(game.camera.combined);
         game.batch.begin();
 
-        GlyphLayout title = new GlyphLayout(game.assets.fontBig, "GAME OVER");
-        float tx = (Config.WORLD_W - title.width) / 2f;
-        game.assets.fontBig.draw(game.batch, title, tx, Config.WORLD_H - 100);
+        String t1 = "GAME OVER";
+        String t2 = "SCORE: " + finalScore + "s";
+        String t3 = "BEST: " + bestScore + "s";
+        String t4 = "ENTER - RESTART";
+        String t5 = "M - MENU";
 
-        GlyphLayout sc = new GlyphLayout(game.assets.fontSmall, "SCORE: " + scoreSeconds);
-        game.assets.fontSmall.draw(game.batch, sc, 80, Config.WORLD_H - 170);
+        float cx = Config.WORLD_W * 0.5f;
+        float y = Config.WORLD_H * 0.60f;
 
-        GlyphLayout retry = new GlyphLayout(game.assets.fontSmall, "[R] JOGAR NOVAMENTE");
-        GlyphLayout menu  = new GlyphLayout(game.assets.fontSmall, "[M] MENU");
-        float cx1 = (Config.WORLD_W - retry.width) / 2f;
-        float cx2 = (Config.WORLD_W - menu.width)  / 2f;
+        layout.setText(game.assets.fontBig != null ? game.assets.fontBig : game.assets.fontSmall, t1);
+        if (game.assets.fontBig != null)
+            game.assets.fontBig.draw(game.batch, t1, cx - layout.width * 0.5f, y);
+        else
+            game.assets.fontSmall.draw(game.batch, t1, cx - layout.width * 0.5f, y);
 
-        game.assets.fontSmall.draw(game.batch, retry, cx1, 60);
-        game.assets.fontSmall.draw(game.batch, menu,  cx2, 35);
+        y -= 40f;
+        layout.setText(game.assets.fontSmall, t2);
+        game.assets.fontSmall.draw(game.batch, t2, cx - layout.width * 0.5f, y);
+
+        y -= 20f;
+        layout.setText(game.assets.fontSmall, t3);
+        game.assets.fontSmall.draw(game.batch, t3, cx - layout.width * 0.5f, y);
+
+        y -= 60f;
+        layout.setText(game.assets.fontSmall, t4);
+        game.assets.fontSmall.draw(game.batch, t4, cx - layout.width * 0.5f, y);
+
+        y -= 80f;
+        layout.setText(game.assets.fontSmall, t5);
+        game.assets.fontSmall.draw(game.batch, t5, cx - layout.width * 0.5f, y);
 
         game.batch.end();
 
-        if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
             game.assets.playButtonSound();
             game.setScreen(new PlayScreen(game));
         }
@@ -53,5 +90,10 @@ public class GameOverScreen extends ScreenAdapter {
             game.assets.playButtonSound();
             game.setScreen(new MenuScreen(game));
         }
+    }
+
+    @Override
+    public void dispose() {
+        game.assets.stopAllMusic();
     }
 }
