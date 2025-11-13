@@ -7,8 +7,11 @@ import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
+
+import java.util.Locale;
 
 import br.com.pixelracer.PixelRacerGame;
 import br.com.pixelracer.config.Config;
@@ -24,6 +27,7 @@ public class PlayScreen extends ScreenAdapter {
 
     private Texture roadTile;
     private Texture white1x1;
+    private Texture playerStarTex;
     private float tileH;
     private float scrollY = 0f;
 
@@ -34,6 +38,7 @@ public class PlayScreen extends ScreenAdapter {
     private float camBaseX, camBaseY;
 
     private float timeElapsed = 0f;
+    private float scoreSeconds = 0f;
     private float nextBurstIn = 0f;
     private float burstLeft = 0f;
 
@@ -52,6 +57,14 @@ public class PlayScreen extends ScreenAdapter {
     private int bestTime = 0;
     private boolean paused = false;
 
+    private int phase = 1;
+    private float phaseBannerTimer = 0f;
+
+    private float consistency = 100f;
+    private float lastSpeed = 0f;
+
+    private final GlyphLayout layout = new GlyphLayout();
+
     public PlayScreen(PixelRacerGame game) {
         this.game = game;
         this.player = new Player();
@@ -66,6 +79,11 @@ public class PlayScreen extends ScreenAdapter {
             float srcH = roadTile.getHeight();
             float scale = Config.WORLD_W / srcW;
             tileH = srcH * scale;
+        }
+
+        if (Gdx.files.internal("gfx/player_star.png").exists()) {
+            playerStarTex = new Texture(Gdx.files.internal("gfx/player_star.png"));
+            playerStarTex.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
         }
 
         Pixmap pm = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
@@ -106,18 +124,31 @@ public class PlayScreen extends ScreenAdapter {
             scrollY += pxPerSecond * dt;
 
             timeElapsed += dt;
+
+            float scoreMul = 0.8f + 0.7f * (consistency / 100f);
+            scoreSeconds += dt * scoreMul;
+
             if (oilTimer > 0f) oilTimer -= dt;
             if (invincibleTimer > 0f) invincibleTimer -= dt;
+
+            updatePhase();
+            updateConsistency(dt);
 
             if (burstLeft > 0f) {
                 burstLeft -= dt;
                 if (burstLeft <= 0f) {
-                    nextBurstIn = MathUtils.random(Config.BURST_MIN_INTERVAL_S, Config.BURST_MAX_INTERVAL_S);
+                    float baseMin = Config.BURST_MIN_INTERVAL_S;
+                    float baseMax = Config.BURST_MAX_INTERVAL_S;
+                    float phaseMul = (phase == 3) ? 0.7f : 1f;
+                    nextBurstIn = MathUtils.random(baseMin, baseMax) * phaseMul;
                     burstLeft = 0f;
                 }
             } else {
                 nextBurstIn -= dt;
-                if (nextBurstIn <= 0f) burstLeft = Config.BURST_DURATION_S;
+                if (nextBurstIn <= 0f) {
+                    float dur = Config.BURST_DURATION_S * ((phase == 3) ? 1.4f : 1f);
+                    burstLeft = dur;
+                }
             }
 
             spawnTimer -= dt;
@@ -131,7 +162,8 @@ public class PlayScreen extends ScreenAdapter {
             float timeMul = difficultyTimeMul(timeElapsed);
             float jitterFactor = 1f + MathUtils.random(-Config.SPAWN_JITTER, Config.SPAWN_JITTER);
 
-            float intervalThis = intervalBase * timeMul * jitterFactor;
+            float phaseSpawnMul = (phase == 2) ? 0.9f : 1f;
+            float intervalThis = intervalBase * timeMul * jitterFactor * phaseSpawnMul;
             if (burstLeft > 0f) intervalThis *= Config.BURST_MULT;
             intervalThis = Math.max(0.25f, intervalThis);
 
@@ -182,6 +214,7 @@ public class PlayScreen extends ScreenAdapter {
                         oilTimer = Config.OIL_EFFECT_S;
                         if (wasOff) game.assets.playSkidSound();
                         emitSkid(player.getBounds().x + player.getBounds().width * 0.5f, player.getBounds().y + 6f, 10);
+                        consistency = Math.max(0f, consistency - 12f);
                     }
                     o.dispose();
                     obstacles.removeIndex(i);
@@ -208,12 +241,12 @@ public class PlayScreen extends ScreenAdapter {
                 if (impactDelay > 0f) {
                     impactDelay -= dt;
                     if (impactDelay <= 0f) {
-                        if (Math.round(timeElapsed) > bestTime) {
+                        if (Math.round(scoreSeconds) > bestTime) {
                             Preferences prefs = Gdx.app.getPreferences("pixelracer");
-                            prefs.putInteger("bestTime", Math.round(timeElapsed));
+                            prefs.putInteger("bestTime", Math.round(scoreSeconds));
                             prefs.flush();
                         }
-                        game.setScreen(new GameOverScreen(game, Math.round(timeElapsed)));
+                        game.setScreen(new GameOverScreen(game, Math.round(scoreSeconds)));
                         return;
                     }
                 }
@@ -237,6 +270,7 @@ public class PlayScreen extends ScreenAdapter {
         if (fadeInAlpha > 0f) fadeInAlpha = Math.max(0f, fadeInAlpha - dt * 3f);
         if (powerupBlinkAlpha > 0f) powerupBlinkAlpha = Math.max(0f, powerupBlinkAlpha - dt * 3f);
         if (impactFlashAlpha > 0f) impactFlashAlpha = Math.max(0f, impactFlashAlpha - dt * 5f);
+        if (phaseBannerTimer > 0f) phaseBannerTimer = Math.max(0f, phaseBannerTimer - dt);
 
         if (!pendingGameOver && !paused) applyCameraShake(); else { game.camera.position.set(camBaseX, camBaseY, 0); game.camera.update(); }
 
@@ -254,7 +288,17 @@ public class PlayScreen extends ScreenAdapter {
         }
 
         for (Obstacle o : obstacles) o.render(game.batch);
-        player.render(game.batch);
+
+        boolean inv = invincibleTimer > 0f && playerStarTex != null;
+        if (inv) {
+            float x = player.getBounds().x;
+            float y = player.getBounds().y;
+            float w = player.getBounds().width;
+            float h = player.getBounds().height;
+            game.batch.draw(playerStarTex, x, y, w, h);
+        } else {
+            player.render(game.batch);
+        }
 
         for (int i = 0; i < particles.size; i++) {
             Particle p = particles.get(i);
@@ -264,22 +308,30 @@ public class PlayScreen extends ScreenAdapter {
         }
         game.batch.setColor(1, 1, 1, 1);
 
-        game.assets.fontSmall.draw(game.batch, String.format("Speed: %.0f", player.getSpeed()), 20, Config.WORLD_H - 20);
-        game.assets.fontSmall.draw(game.batch, String.format("Time: %.1f", timeElapsed), 20, Config.WORLD_H - 40);
-        game.assets.fontSmall.draw(game.batch, String.format("Best: %ds", bestTime), 20, Config.WORLD_H - 60);
+        float leftX = 12f;
+        float topY = Config.WORLD_H - 12f;
 
-        if (invincibleTimer > 0f) {
-            game.assets.fontSmall.draw(game.batch, "STAR!", Config.WORLD_W - 90, Config.WORLD_H - 20);
-        } else if (oilTimer > 0f) {
-            game.assets.fontSmall.draw(game.batch, "OIL!", Config.WORLD_W - 90, Config.WORLD_H - 20);
-        }
+        game.assets.fontSmall.draw(game.batch, String.format(Locale.US, "Speed: %.0f", player.getSpeed()), leftX, topY);
+        game.assets.fontSmall.draw(game.batch, String.format(Locale.US, "Time: %.1f", timeElapsed), leftX, topY - 18f);
+        game.assets.fontSmall.draw(game.batch, String.format(Locale.US, "Best: %ds", bestTime), leftX, topY - 36f);
+
+        String faseTxt = "Fase: " + phase;
+        layout.setText(game.assets.fontSmall, faseTxt);
+        float faseX = Config.WORLD_W - 12f - layout.width;
+        game.assets.fontSmall.draw(game.batch, faseTxt, faseX, topY);
+
+        String scoreTxt = "Score: " + Math.round(scoreSeconds);
+        layout.setText(game.assets.fontSmall, scoreTxt);
+        float scoreX = Config.WORLD_W - 12f - layout.width;
+        game.assets.fontSmall.draw(game.batch, scoreTxt, scoreX, topY - 18f);
 
         if (paused) {
             game.batch.setColor(0, 0, 0, 0.45f);
             game.batch.draw(white1x1, 0, 0, Config.WORLD_W, Config.WORLD_H);
             game.batch.setColor(1, 1, 1, 1);
-            String t = "PAUSED";
-            game.assets.fontSmall.draw(game.batch, t, Config.WORLD_W * 0.5f - 48, Config.WORLD_H * 0.55f);
+            String t = "PAUSED - P";
+            layout.setText(game.assets.fontSmall, t);
+            game.assets.fontSmall.draw(game.batch, t, (Config.WORLD_W - layout.width) * 0.5f, Config.WORLD_H * 0.55f);
         }
 
         if (powerupBlinkAlpha > 0f) {
@@ -294,6 +346,16 @@ public class PlayScreen extends ScreenAdapter {
             game.batch.setColor(1, 1, 1, 1);
         }
 
+        if (phaseBannerTimer > 0f) {
+            float a = MathUtils.clamp(phaseBannerTimer / 1.0f, 0f, 1f);
+            game.batch.setColor(0, 0, 0, 0.35f * a);
+            game.batch.draw(white1x1, 0, 0, Config.WORLD_W, Config.WORLD_H);
+            game.batch.setColor(1, 1, 1, 1);
+            String banner = "FASE " + phase;
+            layout.setText(game.assets.fontSmall, banner);
+            game.assets.fontSmall.draw(game.batch, banner, (Config.WORLD_W - layout.width) * 0.5f, Config.WORLD_H * 0.62f);
+        }
+
         if (fadeInAlpha > 0f) {
             game.batch.setColor(0, 0, 0, fadeInAlpha);
             game.batch.draw(white1x1, 0, 0, Config.WORLD_W, Config.WORLD_H);
@@ -301,6 +363,28 @@ public class PlayScreen extends ScreenAdapter {
         }
 
         game.batch.end();
+    }
+
+    private void updatePhase() {
+        int target = timeElapsed < 60f ? 1 : (timeElapsed < 120f ? 2 : 3);
+        if (target != phase) {
+            phase = target;
+            phaseBannerTimer = 1.0f;
+        }
+    }
+
+    private void updateConsistency(float dt) {
+        float spd = player.getSpeed();
+        float rate = (Math.abs(spd - lastSpeed)) / Math.max(0.0001f, dt);
+        if (rate <= 30f) {
+            consistency = Math.min(100f, consistency + 20f * dt);
+        } else {
+            consistency = Math.max(0f, consistency - 35f * dt);
+        }
+        if (oilTimer > 0f) {
+            consistency = Math.max(0f, consistency - 20f * dt);
+        }
+        lastSpeed = spd;
     }
 
     private float difficultyTimeMul(float elapsed) {
@@ -382,6 +466,7 @@ public class PlayScreen extends ScreenAdapter {
         player.dispose();
         if (roadTile != null) roadTile.dispose();
         if (white1x1 != null) white1x1.dispose();
+        if (playerStarTex != null) playerStarTex.dispose();
         for (Obstacle o : obstacles) o.dispose();
         game.assets.stopAllMusic();
     }

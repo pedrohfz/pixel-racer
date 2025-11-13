@@ -45,7 +45,7 @@ public class Config {
 
     public static final float WEIGHT_CONE = 0.74f;
     public static final float WEIGHT_OIL  = 0.18f;
-    public static final float WEIGHT_STAR = 0.08f;
+//    public static final float WEIGHT_STAR = 0.08f;
 
     public static final float POWERUP_DURATION_S = 5.0f;
 
