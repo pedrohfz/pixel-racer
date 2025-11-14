@@ -19,10 +19,7 @@ public class Assets {
     private Sound sfxPowerup;
     private Sound sfxHitCone;
     private Sound sfxSkid;
-    private Sound sfxButton;
-    private Sound sfxHit;
     private Sound sfxPhaseChange;
-
 
     public Music musicMenu;
     public Music musicPlay;
@@ -86,6 +83,10 @@ public class Assets {
         if (Gdx.files.internal("sfx/skid.mp3").exists()) {
             sfxSkid = Gdx.audio.newSound(Gdx.files.internal("sfx/skid.mp3"));
         }
+
+        if (Gdx.files.internal("sfx/phase_change.mp3").exists()) {
+            sfxPhaseChange = Gdx.audio.newSound(Gdx.files.internal("sfx/phase_change.mp3"));
+        }
     }
 
     public void playMenuMusic() { stopAllMusic(); if (musicMenu != null) musicMenu.play(); }
@@ -119,7 +120,7 @@ public class Assets {
     public void playPowerUpSound() { if (sfxPowerup != null) sfxPowerup.play(0.5f); }
     public void playHitSound() { if (sfxHitCone != null) sfxHitCone.play(1.0f); }
     public void playSkidSound() { if (sfxSkid != null) sfxSkid.play(0.5f); }
-    public void playPhaseChangeSound() {if (sfxPhaseChange != null) sfxPhaseChange.play(1f); }
+    public void playPhaseChangeSound() {if (sfxPhaseChange != null) sfxPhaseChange.play(0.5f); }
 
     public void dispose() {
         if (fontSmall != null) fontSmall.dispose();
@@ -132,8 +133,6 @@ public class Assets {
         if (sfxPowerup != null) sfxPowerup.dispose();
         if (sfxHitCone != null) sfxHitCone.dispose();
         if (sfxSkid != null) sfxSkid.dispose();
-        if (sfxButton != null) sfxButton.dispose();
-        if (sfxHit != null) sfxHit.dispose();
         if (sfxSkid != null) sfxSkid.dispose();
         if (sfxPhaseChange != null) sfxPhaseChange.dispose();
     }
