@@ -1,5 +1,7 @@
 package br.com.pixelracer.screen;
 
+import java.util.Locale;
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Preferences;
@@ -10,8 +12,6 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
-
-import java.util.Locale;
 
 import br.com.pixelracer.PixelRacerGame;
 import br.com.pixelracer.config.Config;
@@ -370,6 +370,7 @@ public class PlayScreen extends ScreenAdapter {
         if (target != phase) {
             phase = target;
             phaseBannerTimer = 1.0f;
+            game.assets.playPhaseChangeSound();
         }
     }
 
